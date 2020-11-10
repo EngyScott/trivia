@@ -130,7 +130,7 @@ def create_app(test_config=None):
   def create_question():
     try:
       body = request.get_json()
-      
+      # print(body)
       question = body.get("question", None)
       answer = body.get("answer", None)
       difficulty = body.get("difficulty", None)
@@ -150,6 +150,7 @@ def create_app(test_config=None):
       res_body['success'] = True
 
       return jsonify(res_body)
+      # return jsonify({'success': True})
     except:
       abort(422) 
   '''
@@ -162,7 +163,24 @@ def create_app(test_config=None):
   only question that include that string within their question. 
   Try using the word "title" to start. 
   '''
-  # fjfj
+  @app.route('/questions/search', methods=['POST'])
+  def search_questions():
+    try:
+      q = request.get_json()['searchTerm']
+      current_category = []
+      # print(q)
+      group = Question.query.filter(Question.question.ilike('%{}%'.format(q))).all()
+      current_questions = paginate_questions(request, group)
+      for question in current_questions:
+        current_category.append(question['category'])
+      print('questions', current_questions,'total_questions', len(group),'current_category', current_category)
+    except:
+      abort(400)
+    return ({
+        'questions': current_questions,
+        'total_questions': len(group),
+        'current_category': current_category
+      })
   '''
   @TODO: 
   Create a GET endpoint to get questions based on category. 
@@ -171,7 +189,23 @@ def create_app(test_config=None):
   categories in the left column will cause only questions of that 
   category to be shown. 
   '''
+  @app.route('/categories/<int:id>/questions')
+  def get_questions_by_category(id):
+    try:
+      categories = Category.query.all()
+      formated_categories = [category.format() for category in categories]
 
+      current_category = Category.query.filter_by(id=id).first_or_404().format()
+      group = Question.query.filter_by(category=id).all()
+      current_questions = paginate_questions(request, group)
+    except:
+      abort(400)
+    return jsonify({
+      'categories': formated_categories,
+      'current_category': current_category,
+      'questions': current_questions,
+      'total_questions': len(group)
+    })
 
   '''
   @TODO: 
@@ -184,7 +218,32 @@ def create_app(test_config=None):
   one question at a time is displayed, the user is allowed to answer
   and shown whether they were correct or not. 
   '''
+  @app.route('/quizzes', methods=['POST'])
+  def play():
+    try:
+      body = request.get_json()
+      previous_questions = body.get("previous_questions")
+      quiz_category = int(body.get("quiz_category"))
 
+      if quiz_category == 0:
+        get_questions = Question.query.all()
+        # print('get_questions', get_questions, len(get_questions))
+        random_question = random.choice(get_questions).format()
+        if random_question in previous_questions:
+          return
+      else:
+        # print('previous_questions', previous_questions, 'quiz_category', quiz_category)
+        get_category = Category.query.filter_by(id=quiz_category).first_or_404()
+        get_questions = Question.query.filter_by(category=quiz_category).all()
+        # print('get_questions', get_questions, len(get_questions))
+
+        random_question = random.choice(get_questions).format()
+        # print('random_question', random_question)
+        if random_question in previous_questions:
+          return
+    except:
+      abort(400)
+    return jsonify({'question': random_question})
   '''
   @TODO: 
   Create error handlers for all expected errors 
