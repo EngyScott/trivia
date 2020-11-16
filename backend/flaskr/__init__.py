@@ -66,21 +66,30 @@ def create_app(test_config=None):
     try:
       current_category = []
 
+      # RETRIEVE ALL QUESTIONS FROM DB 
       group = Question.query.order_by(Question.id).all()
+      # PAGENATE QUESTIONS
       current_questions = paginate_questions(request, group)
       # print('current_questions', current_questions)
-      categories = Category.query.all()
-      formated_categories = [category.format() for category in categories]
-      for question in current_questions:
-          current_category.append(question['category'])
+      if len(current_questions) == 0:
+        abort(404)
+      else:
+        # RETRIEVE ALL CATEGORIES FROM DB
+        categories = Category.query.all()
+        # RETURN FORMATTED CATEGORY LIST
+        formated_categories = [category.format() for category in categories]
+        # GET CURRENT ATEGORIES DEPENDING ON QUESTIONS SHOWING ON PAGE
+        for question in current_questions:
+            current_category.append(question['category'])
+        return ({
+          'questions': current_questions,
+          'total_questions': len(group),
+          'categories': formated_categories,
+          'current_category': current_category
+        })
     except:
-      abort(400)
-    return ({
-        'questions': current_questions,
-        'total_questions': len(group),
-        'categories': formated_categories,
-        'current_category': current_category
-      })
+      abort(404)
+    
   '''
   @TODO: 
   Create an endpoint to DELETE question using a question ID. 
@@ -135,24 +144,26 @@ def create_app(test_config=None):
       answer = body.get("answer", None)
       difficulty = body.get("difficulty", None)
       category = body.get("category", None)
-      
-      res_body={}
-
+    
       new_question = Question(question=question, answer=answer,
                               difficulty=difficulty, category=category)
       new_question.insert()
 
-      res_body['created'] = new_question.id
-      res_body['question'] = new_question.question
-      res_body['answer'] = new_question.answer
-      res_body['difficulty'] = new_question.difficulty
-      res_body['category'] = new_question.category
-      res_body['success'] = True
+      current_category = []
 
-      return jsonify(res_body)
-      # return jsonify({'success': True})
+      group = Question.query.order_by(Question.id).all()
+      current_questions = paginate_questions(request, group)
+    
+      for question in current_questions:
+        current_category.append(question['category'])
     except:
-      abort(422) 
+      abort(422)
+    return jsonify({
+            'created': new_question.id,
+            'questions': current_questions,
+            'total_questions': len(group),
+            'current_category':  current_category
+          })
   '''
   @TODO: 
   Create a POST endpoint to get questions based on a search term. 
@@ -264,6 +275,14 @@ def create_app(test_config=None):
         "error": 400,
         "message": "bad request"
     }), 400
+  
+  @app.errorhandler(404)
+  def not_found(error):
+    return jsonify({
+        "success": False,
+        "error": 404,
+        "message": "content not found"
+    }), 404
   
   return app
 
