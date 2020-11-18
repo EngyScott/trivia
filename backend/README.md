@@ -70,16 +70,41 @@ REVIEW_COMMENT
 ```
 This README is missing documentation of your endpoints. Below is an example for your endpoint to get all categories. Please use it as a reference for creating your documentation and resubmit your code. 
 
-Endpoints
+====================
+** Error Handling **
+====================
+Errors are returnes as JSON objects in the following format: 
+{
+    "success": False,
+    "error": 422,
+    "message": "unprocessable"
+}
+
+The API will return 5 error types when request fails:
+
+422: "unprocessable"
+400: "bad request"
+404: "content not found"
+405: "method not allowed"
+500: "internal server error"
+
+
+===============
+** Endpoints **
+===============
 GET '/categories'
-GET ...
-POST ...
-DELETE ...
+GET '/questions'
+DELETE '/questions/<int:id>'
+POST '/questions'
+GET '/categories/<int:id>/questions'
+POST '/quizzes'
 
 GET '/categories'
+=================
 - Fetches a dictionary of categories in which the keys are the ids and the value is the corresponding string of the category
 - Request Arguments: None
-- Returns: An object with a single key, categories, that contains a object of id: category_string key:value pairs. 
+- Returns: An object with a single key, categories, that contains a object of id: category_string key:value pairs.
+- Sample:  curl http://localhost:5000/categories
 {'1' : "Science",
 '2' : "Art",
 '3' : "Geography",
@@ -88,6 +113,215 @@ GET '/categories'
 '6' : "Sports"}
 
 ```
+GET '/questions'
+================
+- Fetches a dictionary of questions in which the keys are: id, question, answer, difficulty, category and dictionary of categories in which the keys are the ids and the value is the corresponding string of the category
+- Request Arguments: page number
+- Returns: An object of questions: [array contains objects of questions key:value pairs pagenated by 10 questions per page], total_questions:number of total questions , current_category: [array of category ids of current displayed questions], categories: [array contains objects of id: category_string key:value pairs] in key:value pairs.
+- Sample:  curl http://localhost:5000/questions
+
+{
+    "categories": [
+        {
+            "id": 1,
+            "type": "Science"
+        },
+        {
+            "id": 2,
+            "type": "Art"
+        }
+    ],
+    "current_category": [
+        5,
+        4
+    ],
+    "questions": [
+        {
+            "answer": "Edward Scissorhands",
+            "category": 5,
+            "difficulty": 3,
+            "id": 6,
+            "question": "What was the title of the 1990 fantasy directed by Tim Burton about a young man with multi-bladed appendages?"
+        },
+        {
+            "answer": "Muhammad Ali",
+            "category": 4,
+            "difficulty": 1,
+            "id": 9,
+            "question": "What boxer's original name is Cassius Clay?"
+        }
+    ],
+    "total_questions": 18
+}
+`````
+DELETE '/questions/<int:id>'
+============================
+- Deletes a question from database and from page when refreshed, using a question ID
+- Request Arguments: question ID
+- Returns: an object of success value,the deleted question id, list of questions pagenated by 10 per page, number of total questions, current category ids,  list of categories in key:value pairs.
+- Sample: curl -X DELETE http://localhost:5000/questions/3
+
+{
+    "categories": [
+        {
+            "id": 1,
+            "type": "Science"
+        },
+        {
+            "id": 2,
+            "type": "Art"
+        }
+    ],
+    "current_category": [
+        5,
+        4
+    ],
+    "questions": [
+        {
+            "answer": "Edward Scissorhands",
+            "category": 5,
+            "difficulty": 3,
+            "id": 6,
+            "question": "What was the title of the 1990 fantasy directed by Tim Burton about a young man with multi-bladed appendages?"
+        },
+        {
+            "answer": "Muhammad Ali",
+            "category": 4,
+            "difficulty": 1,
+            "id": 9,
+            "question": "What boxer's original name is Cassius Clay?"
+        }
+    ],
+    "total_questions": 17,
+    'success': True,
+    'deleted': 3,
+}
+````
+POST '/questions'
+=================
+- Creates a new question using submitted question, answer,difficulty,category, returns the newly created question id, list of questions pagenated by 10 per page, number of total questions, current category ids in key:value pairs.
+
+- OR performs search in questions using submitted string, returns list of questions that contains the string in any part of the question bosy pagenated by 10 per page, number of total questions, current category ids, in key:value pairs.
+- Request Arguments: searchTerm
+
+- Sample 1: curl http://localhost:5000/questions -X POST -M "Content-Type: application/json" -d "{"searchTerm": "title"}"
+{
+    "current_category": [
+        5,
+        4
+    ],
+    "questions": [
+        {
+            "answer": "Edward Scissorhands",
+            "category": 5,
+            "difficulty": 3,
+            "id": 6,
+            "question": "What was the title of the 1990 fantasy directed by Tim Burton about a young man with multi-bladed appendages?"
+        },
+        {
+            "answer": "Maya Angelou",
+            "category": 4,
+            "difficulty": 2,
+            "id": 25,
+            "question": "Whose autobiography is entitled 'I Know Why the Caged Bird Sings'?"
+        }
+    ],
+    "total_questions": 2
+}
+
+- Sample 2: curl http://localhost:5000/questions -X POST -M "Content-Type: application/json" -d "{"question":"Which Dutch graphic artist–initials M C was a creator of optical illusions?","answer":"Escher","difficulty":1,"category":2}"
+{
+    "created": 28,
+    "current_category": [
+        5,
+        4
+    ],
+    "questions": [
+        {
+            "answer": "Edward Scissorhands",
+            "category": 5,
+            "difficulty": 3,
+            "id": 6,
+            "question": "What was the title of the 1990 fantasy directed by Tim Burton about a young man with multi-bladed appendages?"
+        },
+        {
+            "answer": "Muhammad Ali",
+            "category": 4,
+            "difficulty": 1,
+            "id": 9,
+            "question": "What boxer's original name is Cassius Clay?"
+        }
+    ],
+    "total_questions": 19
+}
+`````
+GET '/categories/<int:id>/questions'
+===================================
+- Fetches list of questions based on category, and returns an object with all categories, current category object with id:type key:value pairs, list of questions based on category, total number of questions in that category
+- Sample : curl http://localhost:5000/categories/4/questions
+{
+    "categories": [
+        {
+            "id": 1,
+            "type": "Science"
+        },
+        {
+            "id": 2,
+            "type": "Art"
+        }
+    ],
+    "current_category": {
+        "id": 4,
+        "type": "History"
+    },
+    "questions": [
+        {
+            "answer": "Muhammad Ali",
+            "category": 4,
+            "difficulty": 1,
+            "id": 9,
+            "question": "What boxer's original name is Cassius Clay?"
+        },
+        {
+            "answer": "George Washington Carver",
+            "category": 4,
+            "difficulty": 2,
+            "id": 12,
+            "question": "Who invented Peanut Butter?"
+        },
+        {
+            "answer": "Scarab",
+            "category": 4,
+            "difficulty": 4,
+            "id": 23,
+            "question": "Which dung beetle was worshipped by the ancient Egyptians?"
+        },
+        {
+            "answer": "Maya Angelou",
+            "category": 4,
+            "difficulty": 2,
+            "id": 25,
+            "question": "Whose autobiography is entitled 'I Know Why the Caged Bird Sings'?"
+        }
+    ],
+    "total_questions": 4
+}
+
+`````
+POST '/quizzes'
+===============
+- Fetches list of qestions, and return a random question within the given category, if provided, and that is not one of the previous questions
+- Request Arguments: category and previous questions
+- Sample : curl http://localhost:5000/quizzes -X POST -M "Content-Type: application/json" -d "{"previous_questions":[],"quiz_category":4}"
+{
+  "question": {
+    "answer": "Scarab", 
+    "category": 4, 
+    "difficulty": 4, 
+    "id": 23, 
+    "question": "Which dung beetle was worshipped by the ancient Egyptians?"
+  }
+}
 
 
 ## Testing
