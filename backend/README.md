@@ -4,7 +4,7 @@
 
 ### Installing Dependencies
 
-#### Python 3.7
+#### Python 3.8
 
 Follow instructions to install the latest version of python for your platform in the [python docs](https://docs.python.org/3/using/unix.html#getting-and-installing-the-latest-version-of-python)
 
@@ -103,33 +103,22 @@ GET '/categories'
 =================
 - Fetches a dictionary of categories in which the keys are the ids and the value is the corresponding string of the category
 - Request Arguments: None
-- Returns: An object with a single key, categories, that contains a object of id: category_string key:value pairs.
+- Returns: An object with a single key, categories, that contains a list of category_string .
 - Sample:  curl http://localhost:5000/categories
-{'1' : "Science",
-'2' : "Art",
-'3' : "Geography",
-'4' : "History",
-'5' : "Entertainment",
-'6' : "Sports"}
+["Science", "Art", "Geography", "History", "Entertainment", "Sports"]
 
 ```
 GET '/questions'
 ================
 - Fetches a dictionary of questions in which the keys are: id, question, answer, difficulty, category and dictionary of categories in which the keys are the ids and the value is the corresponding string of the category
 - Request Arguments: page number
-- Returns: An object of questions: [array contains objects of questions key:value pairs pagenated by 10 questions per page], total_questions:number of total questions , current_category: [array of category ids of current displayed questions], categories: [array contains objects of id: category_string key:value pairs] in key:value pairs.
+- Returns: An object of questions: [array contains objects of questions key:value pairs pagenated by 10 questions per page], total_questions:number of total questions , current_category: [array of category ids of current displayed questions], categories: [array of category_string] in key:value pairs.
 - Sample:  curl http://localhost:5000/questions
 
 {
     "categories": [
-        {
-            "id": 1,
-            "type": "Science"
-        },
-        {
-            "id": 2,
-            "type": "Art"
-        }
+         "Science",
+        "Art"
     ],
     "current_category": [
         5,
@@ -158,19 +147,13 @@ DELETE '/questions/<int:id>'
 ============================
 - Deletes a question from database and from page when refreshed, using a question ID
 - Request Arguments: question ID
-- Returns: an object of success value,the deleted question id, list of questions pagenated by 10 per page, number of total questions, current category ids,  list of categories in key:value pairs.
+- Returns: an object of success value,the deleted question id, list of questions pagenated by 10 per page, number of total questions, current category ids,  list of category string, in key:value pairs.
 - Sample: curl -X DELETE http://localhost:5000/questions/3
 
 {
     "categories": [
-        {
-            "id": 1,
-            "type": "Science"
-        },
-        {
-            "id": 2,
-            "type": "Art"
-        }
+         "Science",
+        "Art"
     ],
     "current_category": [
         5,
@@ -261,14 +244,8 @@ GET '/categories/<int:id>/questions'
 - Sample : curl http://localhost:5000/categories/4/questions
 {
     "categories": [
-        {
-            "id": 1,
-            "type": "Science"
-        },
-        {
-            "id": 2,
-            "type": "Art"
-        }
+         "Science",
+        "Art"
     ],
     "current_category": {
         "id": 4,
@@ -332,3 +309,7 @@ createdb trivia_test
 psql trivia_test < trivia.psql
 python test_flaskr.py
 ```
+================
+** Deployment **
+================
+N/A

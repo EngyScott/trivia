@@ -25,7 +25,7 @@ def create_app(test_config=None):
   '''
   @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
   '''
-  cors = CORS(app, resources={r"/*": {"origins": "http://127.0.0.1:5000/"}})
+  cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
   '''
   @TODO: Use the after_request decorator to set Access-Control-Allow
@@ -43,11 +43,19 @@ def create_app(test_config=None):
   @app.route('/categories')
   def get_categories():
     try:
+      # RETRIEVE ALL CATEGORIES FROM DB
       categories = Category.query.all()
+      # print(categories)
+      # FORMAT LIST OF CATEGORIES TO JSON TYPE
       formated_categories = [category.format() for category in categories]
+      # print('formated_categories:', formated_categories)
+      # RETURN LIST OF CATEGORIES TYPES
+      category_type = [category['type'] for category in formated_categories]
+      # print('category_type:', category_type)
+      
+      return jsonify({'categories': category_type})
     except:
       abort(404)
-    return jsonify({'categories': formated_categories})
 
   '''
   @TODO: 
@@ -76,15 +84,17 @@ def create_app(test_config=None):
       else:
         # RETRIEVE ALL CATEGORIES FROM DB
         categories = Category.query.all()
-        # RETURN FORMATTED CATEGORY LIST
+        # FORMATT CATEGORY LIST
         formated_categories = [category.format() for category in categories]
+        # RETURN LIST OF ATEGORIES TYPES
+        category_type = [category['type'] for category in formated_categories]
         # GET CURRENT ATEGORIES DEPENDING ON QUESTIONS SHOWING ON PAGE
         for question in current_questions:
             current_category.append(question['category'])
         return ({
           'questions': current_questions,
           'total_questions': len(group),
-          'categories': formated_categories,
+          'categories': category_type,
           'current_category': current_category
         })
     except:
@@ -100,20 +110,27 @@ def create_app(test_config=None):
   @app.route('/questions/<int:id>', methods=['DELETE'])
   def delete_question(id):
     try:
+      # RETRIEVE QUESTION FROM DB USING ID
       question = Question.query.filter_by(id=id).one_or_none()
       if question is None:
         abort(422)
       else:
+        # FORMAT QUESTION TO JSON TYPE TO CATCH DATA
         formatted_question = question.format()
+        # DELETE QUETION FROM DB
         question.delete()
 
         current_category = []
-
+        # RETRIEVE ALL QUESTIONS FROM DB
         group = Question.query.order_by(Question.id).all()
+        # PAGENATE QUESTIONS
         current_questions = paginate_questions(request, group)
         # print('current_questions', current_questions)
+        # RETRIEVE ALL CATEGORIES FROM DB
         categories = Category.query.all()
+        # FORMAT LIST OF ATEGORIES TO JSON TYPE
         formated_categories = [category.format() for category in categories]
+        # RETURN LIST OF CATEGORIES TYPES
         for question in current_questions:
           current_category.append(question['category'])
         return jsonify ({
@@ -153,8 +170,10 @@ def create_app(test_config=None):
   
   @app.route('/questions', methods=['POST'])
   def create_question():
+    # RETRIEVE REQUEST BODY
     body = request.get_json()
     # print(body)
+    # ASSIGN REUQES BODY DATA TO VARIABLES
     question = body.get("question", None)
     answer = body.get("answer", None)
     difficulty = body.get("difficulty", None)
@@ -162,12 +181,15 @@ def create_app(test_config=None):
     q = body.get('searchTerm', None)
 
     try:
+      # IF REQUEST BODY HAS SearchTerm:
       if q:
         current_category = []
         # print(q)
+        # RETRIVE ALL QUESTIONS THAT MATCH SEARCH TERM FROM DB
         group = Question.query.filter(Question.question.ilike('%{}%'.format(q))).all()
-        
+        # PAGENATE RETRIEVED QUESTIONS
         current_questions = paginate_questions(request, group)
+        # LIST OF CURRENT CATEGORIES BASED ON DISPLAYED QUESTIONS
         for question in current_questions:
           current_category.append(question['category'])
         # print('questions', current_questions,'total_questions', len(group),'current_category', current_category)
@@ -178,18 +200,23 @@ def create_app(test_config=None):
           'current_category': current_category
         })
       else:
+        # IF REQUEST BODY HAS NEW QUESTION INFO:
+        # MAKE SURE ALL FIELDS ARE NOT EMPTY
         if (question is None) or (answer is None) or (difficulty is None) or (category is None):
           abort(405)
         else:
+          # CREATE NEW QUESTION USING REQUEST BODY INFO
           new_question = Question(question=question, answer=answer,
                                   difficulty=difficulty, category=category)
+          # INSERT NEW QUESTION INTO DB
           new_question.insert()
 
           current_category = []
-
+          # RETRIEVE ALL QUESTIONS FROM DB
           group = Question.query.order_by(Question.id).all()
+          # PAGENATE QUESTIONS
           current_questions = paginate_questions(request, group)
-        
+          # RETURN LIST OF CURRENT CATEGORIES BASED ON DISPLAYED QUESTIONS
           for question in current_questions:
             current_category.append(question['category'])
           return jsonify({
@@ -213,18 +240,25 @@ def create_app(test_config=None):
   @app.route('/categories/<int:id>/questions')
   def get_questions_by_category(id):
     try:
+      # RETRIEVE ALL CATEGORIES FROM DB
       categories = Category.query.all()
+      # FORMAT LIST OF CATEGORIES TO JSON TYPE
       formated_categories = [category.format() for category in categories]
-
+      # RETURN LIST OF ATEGORIES TYPES
+      category_type = [category['type'] for category in formated_categories]
+      # RETRIEVE CATEGORY USING ID FROM DB
       current_category = Category.query.filter_by(id=id).first_or_404().format()
+      # IF ID IS NOT VALID
       if current_category == 404:
         abort(404)
       else:
+        # RETRIEVE ALL CATEGORIES FROM DB
         group = Question.query.filter_by(category=id).all()
+        # PAGENATE QUESTIONS
         current_questions = paginate_questions(request, group)
         return jsonify({
-          'categories': formated_categories,
-          'current_category': current_category,
+          'categories': category_type,
+          'current_category': current_category['type'],
           'questions': current_questions,
           'total_questions': len(group)
         })
@@ -246,23 +280,35 @@ def create_app(test_config=None):
   @app.route('/quizzes', methods=['POST'])
   def play():
     try:
+      # RETRIEVE REQUEST BODY IN JSON TYPE
       body = request.get_json()
+      # print('body:', body)
+      # ASSIGN REQUEST BODYINFO TO VARIABLES
       previous_questions = body.get("previous_questions")
-      quiz_category = int(body.get("quiz_category"))
-
+      quiz_category = body.get("quiz_category")
+      # print('quiz_category', quiz_category)
+      quiz_category_id = int(quiz_category['id'])
+      # print('quiz_category_id:', quiz_category_id)
+      # IF PLAYER CHOSES ALL CATEGORIES
       if quiz_category == 0:
+        # RETRIEVE ALL QUESTIONS FOM DB
         get_questions = Question.query.all()
         # print('get_questions', get_questions, len(get_questions))
+        # RANDOMLY CHOSE QUESTION TO DISPLAY IN JSON FORMAT
         random_question = random.choice(get_questions).format()
+        # IF PLAYES CHOSES CATEGORY
       else:
         # print('previous_questions', previous_questions, 'quiz_category', quiz_category)
-        get_category = Category.query.filter_by(id=quiz_category).first_or_404()
-        get_questions = Question.query.filter_by(category=quiz_category).all()
+        # RETRIEVE CATEGORY THAT MATCH REQUEST ID FORM DB
+        # get_category = Category.query.filter_by(id=quiz_category_id).first_or_404()
+        # RETRIEVE ALL QUESTIONS UNDER THE REQUESTED CATEGORY FROM DB
+        get_questions = Question.query.filter_by(category=quiz_category_id).all()
         # print('get_questions', get_questions, len(get_questions))
-
+        # RANDOMLY CHOSE QUESTION TO DISPLAY IN JSON FORMAT
         random_question = random.choice(get_questions).format()
         # print('random_question', random_question)
-      if random_question in previous_questions:
+        # MAKE SURE THE RANDOMLY CHOSEN QUESTION IS NOT INCLUDED IN PREVIOUS QUESTION TO PREVENT REPEATING
+      if random_question['id'] in previous_questions:
         return
     except:
       abort(400)

@@ -63,13 +63,13 @@ class TriviaTestCase(unittest.TestCase):
 
     def test_delete_question(self):
         """TEST DELETE QUESTION"""
-        res = self.client().delete('/questions/15')
+        res = self.client().delete('/questions/22')
         data = json.loads(res.data)
-        qestion = Question.query.filter_by(id=15).one_or_none()
+        qestion = Question.query.filter_by(id=22).one_or_none()
 
         self.assertEqual(res.status_code, 200)
         self.assertEqual(data['success'], True)
-        self.assertEqual(data['deleted'], 15)
+        self.assertEqual(data['deleted'], 22)
         self.assertTrue(data['questions'])
         self.assertTrue(data['total_questions'])
         self.assertEqual(qestion, None)
@@ -143,7 +143,7 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'], False)
 
     def test_play(self):
-        res = self.client().post('/quizzes', json={"previous_questions":[],"quiz_category":5})
+        res = self.client().post('/quizzes', json={"previous_questions":[],"quiz_category":{"id": 5, "type": "Entertainment"}})
 
         data = json.loads(res.data)
 
